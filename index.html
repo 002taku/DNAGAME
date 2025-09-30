@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNAラッシュ：セントラルドグマ</title>
+    <style>
+        /* --- CSS（デザイン） --- */
+        :root {
+            --primary-bg: #1a1a2e;
+            --secondary-bg: #16213e;
+            --accent-color: #e94560;
+            --text-color: #e0e0e0;
+            --highlight-color: #53a8b6;
+            --correct-color: #4caf50;
+            --wrong-color: #f44336;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        #game-container {
+            background-color: var(--secondary-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(227, 20, 100, 0.5);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: #e2703a;
+            margin-bottom: 20px;
+        }
+
+        #game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .problem-set {
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .label {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        #dna-display {
+            font-size: 1.8em;
+            font-weight: bold;
+            letter-spacing: 5px;
+            padding: 10px;
+            background-color: #0f3460;
+            border-radius: 10px;
+            color: var(--highlight-color);
+        }
+
+        .answer-input {
+            width: 95%;
+            padding: 10px;
+            font-size: 1.2em;
+            text-align: center;
+            border: 2px solid var(--highlight-color);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            border-radius: 10px;
+            text-transform: uppercase;
+        }
+
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .game-button {
+            padding: 15px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        #submit-button {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        #submit-button:hover { background-color: #c73049; }
+
+        #toggle-codon-button {
+            background-color: #0f3460;
+            color: var(--highlight-color);
+        }
+        #toggle-codon-button:hover { background-color: #1a4a8a; }
+
+        #reset-button {
+            background-color: var(--correct-color);
+            color: white;
+            display: none; /* 最初は非表示 */
+        }
+        #reset-button:hover { background-color: #388e3c; }
+
+
+        #feedback { margin-top: 20px; font-size: 1.2em; height: 25px; }
+
+        /* コドン表モーダル */
+        #codon-modal {
+            display: none; /* 最初は非表示 */
+            position: fixed;
+            z-index: 1;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        #codon-content {
+            background-color: var(--secondary-bg);
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 15px;
+            width: 95%;
+            max-width: 800px;
+        }
+        #codon-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #codon-table th, #codon-table td {
+            border: 1px solid var(--highlight-color);
+            padding: 5px;
+            font-size: 0.9em;
+        }
+        #codon-table th { background-color: #0f3460; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>DNAラッシュ 🧬 セントラルドグマ</h1>
+
+        <div id="game-info">
+            <span id="score">スコア: 0</span>
+            <span id="lives">ライフ: ♥♥♥</span>
+        </div>
+
+        <div class="problem-set">
+            <span class="label">DNA</span>
+            <span id="dna-display">TAC</span>
+        </div>
+        <div class="problem-set">
+            <label for="mrna-input" class="label">mRNA</label>
+            <input type="text" id="mrna-input" class="answer-input" maxlength="3">
+        </div>
+        <div class="problem-set">
+            <label for="trna-input" class="label">tRNA</label>
+            <input type="text" id="trna-input" class="answer-input" maxlength="3">
+        </div>
+        <div class="problem-set">
+            <label for="amino-acid-input" class="label">アミノ酸</label>
+            <input type="text" id="amino-acid-input" class="answer-input">
+        </div>
+
+        <div class="control-buttons">
+            <button id="submit-button" class="game-button">全て回答して決定</button>
+            <button id="toggle-codon-button" class="game-button">コドン表を表示</button>
+            <button id="reset-button" class="game-button">もう一度挑戦！</button>
+        </div>
+
+        <div id="feedback"></div>
+    </div>
+
+    <div id="codon-modal">
+        <div id="codon-content">
+            <h2>mRNA コドン表</h2>
+            <table id="codon-table"></table>
+            <p style="margin-top: 15px;">（閉じるには表の外側をクリック）</p>
+        </div>
+    </div>
+
+    <script>
+    /* --- JavaScript（ゲームの動き） --- */
+
+    // --- データ定義 ---
+    const rules = {
+        dnaToMrna: {'A': 'U', 'T': 'A', 'C': 'G', 'G': 'C'},
+        mrnaToTrna: {'A': 'U', 'U': 'A', 'C': 'G', 'G': 'C'}
+    };
+
+    const codonTable = {
+        'UUU': 'フェニルアラニン', 'UUC': 'フェニルアラニン', 'UUA': 'ロイシン', 'UUG': 'ロイシン',
+        'UCU': 'セリン', 'UCC': 'セリン', 'UCA': 'セリン', 'UCG': 'セリン',
+        'UAU': 'チロシン', 'UAC': 'チロシン', 'UAA': '終止', 'UAG': '終止',
+        'UGU': 'システイン', 'UGC': 'システイン', 'UGA': '終止', 'UGG': 'トリプトファン',
+        'CUU': 'ロイシン', 'CUC': 'ロイシン', 'CUA': 'ロイシン', 'CUG': 'ロイシン',
+        'CCU': 'プロリン', 'CCC': 'プロリン', 'CCA': 'プロリン', 'CCG': 'プロリン',
+        'CAU': 'ヒスチジン', 'CAC': 'ヒスチジン', 'CAA': 'グルタミン', 'CAG': 'グルタミン',
+        'CGU': 'アルギニン', 'CGC': 'アルギニン', 'CGA': 'アルギニン', 'CGG': 'アルギニン',
+        'AUU': 'イソロイシン', 'AUC': 'イソロイシン', 'AUA': 'イソロイシン', 'AUG': 'メチオニン(開始)',
+        'ACU': 'トレオニン', 'ACC': 'トレオニン', 'ACA': 'トレオニン', 'ACG': 'トレオニン',
+        'AAU': 'アスパラギン', 'AAC': 'アスパラギン', 'AAA': 'リジン', 'AAG': 'リジン',
+        'AGU': 'セリン', 'AGC': 'セリン', 'AGA': 'アルギニン', 'AGG': 'アルギニン',
+        'GUU': 'バリン', 'GUC': 'バリン', 'GUA': 'バリン', 'GUG': 'バリン',
+        'GCU': 'アラニン', 'GCC': 'アラニン', 'GCA': 'アラニン', 'GCG': 'アラニン',
+        'GAU': 'アスパラギン酸', 'GAC': 'アスパラギン酸', 'GAA': 'グルタミン酸', 'GAG': 'グルタミン酸',
+        'GGU': 'グリシン', 'GGC': 'グリシン', 'GGA': 'グリシン', 'GGG': 'グリシン'
+    };
+
+
+    // --- HTML要素の取得 ---
+    const elements = {
+        score: document.getElementById('score'),
+        lives: document.getElementById('lives'),
+        dnaDisplay: document.getElementById('dna-display'),
+        mrnaInput: document.getElementById('mrna-input'),
+        trnaInput: document.getElementById('trna-input'),
+        aminoAcidInput: document.getElementById('amino-acid-input'),
+        submitButton: document.getElementById('submit-button'),
+        toggleCodonButton: document.getElementById('toggle-codon-button'),
+        resetButton: document.getElementById('reset-button'),
+        feedback: document.getElementById('feedback'),
+        codonModal: document.getElementById('codon-modal'),
+        codonTable: document.getElementById('codon-table')
+    };
+
+    // --- ゲームの状態 ---
+    let state = {
+        score: 0,
+        lives: 3,
+        currentDna: '',
+        correctAnswers: { mrna: '', trna: '', aminoAcid: '' }
+    };
+
+    // --- 関数定義 ---
+    function generateCodonTable() {
+        const bases = ['U', 'C', 'A', 'G'];
+        let html = '<thead><tr><th></th>';
+        bases.forEach(b => html += `<th>${b}</th>`);
+        html += '</tr></thead><tbody>';
+        bases.forEach(first => {
+            bases.forEach(second => {
+                html += `<tr><th>${first}${second}</th>`;
+                bases.forEach(third => {
+                    const codon = first + second + third;
+                    html += `<td><b>${codon}</b><br>${codonTable[codon]}</td>`;
+                });
+                html += '</tr>';
+            });
+        });
+        html += '</tbody>';
+        elements.codonTable.innerHTML = html;
+    }
+
+    function updateDisplay() {
+        elements.score.textContent = `スコア: ${state.score}`;
+        elements.lives.textContent = `ライフ: ${'♥'.repeat(state.lives)}`;
+    }
+    
+    function nextProblem() {
+        // 開始コドン(AUG)か終止コドン以外が生成されるまで繰り返す
+        let aminoAcid = '';
+        do {
+            const dnaBases = ['A', 'T', 'C', 'G'];
+            state.currentDna = [1, 2, 3].map(() => dnaBases[Math.floor(Math.random() * 4)]).join('');
+            
+            state.correctAnswers.mrna = Array.from(state.currentDna).map(b => rules.dnaToMrna[b]).join('');
+            aminoAcid = codonTable[state.correctAnswers.mrna];
+
+        } while (aminoAcid === '終止' || aminoAcid === 'メチオニン(開始)');
+        
+        state.correctAnswers.trna = Array.from(state.correctAnswers.mrna).map(b => rules.mrnaToTrna[b]).join('');
+        state.correctAnswers.aminoAcid = aminoAcid;
+
+        elements.dnaDisplay.textContent = state.currentDna;
+        [elements.mrnaInput, elements.trnaInput, elements.aminoAcidInput].forEach(el => el.value = '');
+        elements.feedback.textContent = '';
+        elements.mrnaInput.focus();
+    }
+
+    function checkAnswer() {
+        const userMrna = elements.mrnaInput.value.toUpperCase();
+        const userTrna = elements.trnaInput.value.toUpperCase();
+        const userAmino = elements.aminoAcidInput.value.trim();
+
+        const isMrnaCorrect = userMrna === state.correctAnswers.mrna;
+        const isTrnaCorrect = userTrna === state.correctAnswers.trna;
+        // アミノ酸はカタカナ・ひらがなを区別しない
+        const isAminoCorrect = userAmino.replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60)) === state.correctAnswers.aminoAcid.replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
+
+        if (isMrnaCorrect && isTrnaCorrect && isAminoCorrect) {
+            elements.feedback.textContent = "パーフェクト！🎉";
+            elements.feedback.style.color = 'var(--correct-color)';
+            state.score += 100;
+        } else {
+            elements.feedback.innerHTML = `残念...<br>
+                mRNA: ${state.correctAnswers.mrna} / 
+                tRNA: ${state.correctAnswers.trna} /
+                アミノ酸: ${state.correctAnswers.aminoAcid}`;
+            elements.feedback.style.color = 'var(--wrong-color)';
+            state.lives--;
+        }
+
+        updateDisplay();
+
+        if (state.lives > 0) {
+            setTimeout(nextProblem, 2500);
+        } else {
+            gameOver();
+        }
+    }
+    
+    function gameOver() {
+        elements.feedback.textContent = "ゲームオーバー！";
+        elements.dnaDisplay.textContent = "FIN";
+        elements.submitButton.style.display = 'none';
+        elements.toggleCodonButton.style.display = 'none';
+        elements.resetButton.style.display = 'inline-block';
+        [elements.mrnaInput, elements.trnaInput, elements.aminoAcidInput].forEach(el => el.disabled = true);
+    }
+    
+    function resetGame() {
+        state.score = 0;
+        state.lives = 3;
+        updateDisplay();
+        
+        elements.submitButton.style.display = 'inline-block';
+        elements.toggleCodonButton.style.display = 'inline-block';
+        elements.resetButton.style.display = 'none';
+        [elements.mrnaInput, elements.trnaInput, elements.aminoAcidInput].forEach(el => el.disabled = false);
+        
+        nextProblem();
+    }
+
+    // --- イベントリスナー ---
+    elements.submitButton.addEventListener('click', checkAnswer);
+    elements.resetButton.addEventListener('click', resetGame);
+    elements.toggleCodonButton.addEventListener('click', () => {
+        elements.codonModal.style.display = 'flex';
+    });
+    elements.codonModal.addEventListener('click', (e) => {
+        if (e.target === elements.codonModal) {
+            elements.codonModal.style.display = 'none';
+        }
+    });
+
+    // --- ゲーム初期化 ---
+    generateCodonTable();
+    resetGame();
+
+    </script>
+</body>
+</html>
