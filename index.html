@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DNAラッシュ：セントラルドグマ</title>
+    <title>DNAラッシュ：セントラルドグマ最終改良版</title>
     <style>
         /* --- CSS（デザイン） --- */
         :root {
@@ -46,17 +46,16 @@
         }
         #submit-button { background-color: var(--accent-color); color: white; }
         #submit-button:hover { background-color: #c73049; }
+        #next-question-button { background-color: var(--highlight-color); color: white; display: none; } /* 新しいボタン */
+        #next-question-button:hover { background-color: #3a8a9a; }
         #toggle-codon-button { background-color: #0f3460; color: var(--highlight-color); }
         #toggle-codon-button:hover { background-color: #1a4a8a; }
         #reset-button { background-color: var(--correct-color); color: white; display: none; }
         #reset-button:hover { background-color: #388e3c; }
-
         #input-form { margin-top: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; }
         .base-button { padding: 20px; font-size: 1.5em; font-weight: bold; background-color: #0f3460; color: var(--highlight-color); }
         #delete-button { background-color: #4a4a5e; }
-
         #feedback { margin-top: 20px; font-size: 1.2em; height: 50px; }
-
         #codon-modal {
             display: none; position: fixed; z-index: 100; left: 0; top: 0;
             width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);
@@ -76,27 +75,26 @@
 </head>
 <body>
     <div id="game-container">
-        <h1>DNAラッシュ 🧬 セントラルドグマ</h1>
+        <h1>DNAラッシュ 🧬 最終改良版</h1>
         <div id="game-info"><span id="score">スコア: 0</span><span id="lives">ライフ: ♥♥♥</span></div>
         <div class="problem-set"><span class="label">DNA</span><span id="dna-display">TAC</span></div>
         <div class="problem-set"><label for="mrna-input" class="label">mRNA</label><input type="text" id="mrna-input" class="answer-input" readonly></div>
         <div class="problem-set"><label for="trna-input" class="label">tRNA</label><input type="text" id="trna-input" class="answer-input" readonly></div>
         <div class="problem-set"><label for="amino-acid-input" class="label">アミノ酸</label><input type="text" id="amino-acid-input" class="answer-input" readonly></div>
         <div id="input-form">
-            <button class="game-button base-button" data-type="base">A</button>
-            <button class="game-button base-button" data-type="base">T</button>
-            <button class="game-button base-button" data-type="base">C</button>
-            <button class="game-button base-button" data-type="base">G</button>
-            <button class="game-button base-button" data-type="base">U</button>
-            <button id="delete-button" class="game-button base-button">削除</button>
+            <button class="game-button base-button" data-type="base">A</button><button class="game-button base-button" data-type="base">T</button>
+            <button class="game-button base-button" data-type="base">C</button><button class="game-button base-button" data-type="base">G</button>
+            <button class="game-button base-button" data-type="base">U</button><button id="delete-button" class="game-button base-button">削除</button>
         </div>
-        <div class="control-buttons"><button id="submit-button" class="game-button">決定</button><button id="toggle-codon-button" class="game-button">コドン表</button><button id="reset-button" class="game-button">もう一度挑戦！</button></div>
+        <div class="control-buttons">
+            <button id="submit-button" class="game-button">決定</button>
+            <button id="next-question-button" class="game-button">次の問題へ</button> <button id="toggle-codon-button" class="game-button">コドン表</button>
+            <button id="reset-button" class="game-button">もう一度挑戦！</button>
+        </div>
         <div id="feedback"></div>
     </div>
     <div id="codon-modal">
-        <div id="codon-content">
-            <h2>mRNA コドン表</h2><table id="codon-table"></table><p style="margin-top: 15px;">（閉じるには表の外側をクリック）</p>
-        </div>
+        <div id="codon-content"><h2>mRNA コドン表</h2><table id="codon-table"></table><p style="margin-top: 15px;">（閉じるには表の外側をクリック）</p></div>
     </div>
 
     <script>
@@ -104,78 +102,84 @@
     const rules = { dnaToMrna: {'A': 'U', 'T': 'A', 'C': 'G', 'G': 'C'}, mrnaToTrna: {'A': 'U', 'U': 'A', 'C': 'G', 'G': 'C'} };
     const codonTable = { 'UUU': 'フェニルアラニン', 'UUC': 'フェニルアラニン', 'UUA': 'ロイシン', 'UUG': 'ロイシン', 'UCU': 'セリン', 'UCC': 'セリン', 'UCA': 'セリン', 'UCG': 'セリン', 'UAU': 'チロシン', 'UAC': 'チロシン', 'UAA': '終止', 'UAG': '終止', 'UGU': 'システイン', 'UGC': 'システイン', 'UGA': '終止', 'UGG': 'トリプトファン', 'CUU': 'ロイシン', 'CUC': 'ロイシン', 'CUA': 'ロイシン', 'CUG': 'ロイシン', 'CCU': 'プロリン', 'CCC': 'プロリン', 'CCA': 'プロリン', 'CCG': 'プロリン', 'CAU': 'ヒスチジン', 'CAC': 'ヒスチジン', 'CAA': 'グルタミン', 'CAG': 'グルタミン', 'CGU': 'アルギニン', 'CGC': 'アルギニン', 'CGA': 'アルギニン', 'CGG': 'アルギニン', 'AUU': 'イソロイシン', 'AUC': 'イソロイシン', 'AUA': 'イソロイシン', 'AUG': 'メチオニン(開始)', 'ACU': 'トレオニン', 'ACC': 'トレオニン', 'ACA': 'トレオニン', 'ACG': 'トレオニン', 'AAU': 'アスパラギン', 'AAC': 'アスパラギン', 'AAA': 'リジン', 'AAG': 'リジン', 'AGU': 'セリン', 'AGC': 'セリン', 'AGA': 'アルギニン', 'AGG': 'アルギニン', 'GUU': 'バリン', 'GUC': 'バリン', 'GUA': 'バリン', 'GUG': 'バリン', 'GCU': 'アラニン', 'GCC': 'アラニン', 'GCA': 'アラニン', 'GCG': 'アラニン', 'GAU': 'アスパラギン酸', 'GAC': 'アスパラギン酸', 'GAA': 'グルタミン酸', 'GAG': 'グルタミン酸', 'GGU': 'グリシン', 'GGC': 'グリシン', 'GGA': 'グリシン', 'GGG': 'グリシン' };
     const aminoAcids = [...new Set(Object.values(codonTable))].filter(acid => acid !== '終止' && acid !== 'メチオニン(開始)');
-    const elements = { score: document.getElementById('score'), lives: document.getElementById('lives'), dnaDisplay: document.getElementById('dna-display'), mrnaInput: document.getElementById('mrna-input'), trnaInput: document.getElementById('trna-input'), aminoAcidInput: document.getElementById('amino-acid-input'), submitButton: document.getElementById('submit-button'), toggleCodonButton: document.getElementById('toggle-codon-button'), resetButton: document.getElementById('reset-button'), feedback: document.getElementById('feedback'), codonModal: document.getElementById('codon-modal'), codonTable: document.getElementById('codon-table'), inputForm: document.getElementById('input-form'), answerInputs: document.querySelectorAll('.answer-input'), deleteButton: document.getElementById('delete-button'), baseButtons: document.querySelectorAll('[data-type="base"]') };
+    const elements = { score: document.getElementById('score'), lives: document.getElementById('lives'), dnaDisplay: document.getElementById('dna-display'), mrnaInput: document.getElementById('mrna-input'), trnaInput: document.getElementById('trna-input'), aminoAcidInput: document.getElementById('amino-acid-input'), submitButton: document.getElementById('submit-button'), nextQuestionButton: document.getElementById('next-question-button'), toggleCodonButton: document.getElementById('toggle-codon-button'), resetButton: document.getElementById('reset-button'), feedback: document.getElementById('feedback'), codonModal: document.getElementById('codon-modal'), codonTable: document.getElementById('codon-table'), inputForm: document.getElementById('input-form'), answerInputs: document.querySelectorAll('.answer-input'), deleteButton: document.getElementById('delete-button'), baseButtons: document.querySelectorAll('[data-type="base"]') };
     let state = { score: 0, lives: 3, currentDna: '', correctAnswers: {}, activeInput: null };
 
-    function generateCodonTable() {
-        const bases = ['U', 'C', 'A', 'G'];
-        let tableHTML = '<thead><tr><th></th>';
-        bases.forEach(base => tableHTML += `<th>${base}</th>`);
-        tableHTML += '<th></th></tr></thead><tbody>';
-        bases.forEach(firstBase => {
-            tableHTML += `<tr><th>${firstBase}</th>`;
-            bases.forEach(secondBase => {
-                let cellContent = '';
-                bases.forEach(thirdBase => {
-                    const codon = firstBase + secondBase + thirdBase;
-                    const aminoAcid = codonTable[codon] || '';
-                    cellContent += `<b>${codon}</b>: ${aminoAcid.replace('(開始)', '')}<br>`;
-                });
-                tableHTML += `<td>${cellContent}</td>`;
-            });
-            tableHTML += `<th>${firstBase}</th></tr>`;
-        });
-        tableHTML += '</tbody>';
-        elements.codonTable.innerHTML = tableHTML;
+    function generateCodonTable() { /* ... (変更なし) ... */ const bases = ['U', 'C', 'A', 'G']; let tableHTML = '<thead><tr><th></th>'; bases.forEach(base => tableHTML += `<th>${base}</th>`); tableHTML += '<th></th></tr></thead><tbody>'; bases.forEach(firstBase => { tableHTML += `<tr><th>${firstBase}</th>`; bases.forEach(secondBase => { let cellContent = ''; bases.forEach(thirdBase => { const codon = firstBase + secondBase + thirdBase; const aminoAcid = codonTable[codon] || ''; cellContent += `<b>${codon}</b>: ${aminoAcid.replace('(開始)', '')}<br>`; }); tableHTML += `<td>${cellContent}</td>`; }); tableHTML += `<th>${firstBase}</th></tr>`; }); tableHTML += '</tbody>'; elements.codonTable.innerHTML = tableHTML; }
+    function updateDisplay() { elements.score.textContent = `スコア: ${state.score}`; elements.lives.textContent = `ライフ: ${'♥'.repeat(state.lives)}`; }
+    function setActiveInput(inputElement) { elements.answerInputs.forEach(el => el.classList.remove('active-input')); state.activeInput = inputElement; if(state.activeInput) state.activeInput.classList.add('active-input'); }
+    
+    function nextProblem() {
+        let aminoAcid = '';
+        do { const dnaBases = ['A', 'T', 'C', 'G']; state.currentDna = [1, 2, 3].map(() => dnaBases[Math.floor(Math.random() * 4)]).join(''); state.correctAnswers.mrna = Array.from(state.currentDna).map(b => rules.dnaToMrna[b]).join(''); aminoAcid = codonTable[state.correctAnswers.mrna]; } while (!aminoAcid || aminoAcid === '終止' || aminoAcid === 'メチオニン(開始)');
+        state.correctAnswers.trna = Array.from(state.correctAnswers.mrna).map(b => rules.mrnaToTrna[b]).join('');
+        state.correctAnswers.aminoAcid = aminoAcid;
+
+        elements.dnaDisplay.textContent = state.currentDna;
+        elements.answerInputs.forEach(el => { el.value = ''; el.disabled = false; });
+        elements.feedback.textContent = '';
+        
+        elements.submitButton.style.display = 'inline-block';
+        elements.nextQuestionButton.style.display = 'none';
+        
+        setActiveInput(elements.mrnaInput);
     }
 
-    function updateDisplay() { elements.score.textContent = `スコア: ${state.score}`; elements.lives.textContent = `ライフ: ${'♥'.repeat(state.lives)}`; }
-    function setActiveInput(inputElement) { elements.answerInputs.forEach(el => el.classList.remove('active-input')); state.activeInput = inputElement; state.activeInput.classList.add('active-input'); }
-    function nextProblem() { let aminoAcid = ''; do { const dnaBases = ['A', 'T', 'C', 'G']; state.currentDna = [1, 2, 3].map(() => dnaBases[Math.floor(Math.random() * 4)]).join(''); state.correctAnswers.mrna = Array.from(state.currentDna).map(b => rules.dnaToMrna[b]).join(''); aminoAcid = codonTable[state.correctAnswers.mrna]; } while (!aminoAcid || aminoAcid === '終止' || aminoAcid === 'メチオニン(開始)'); state.correctAnswers.trna = Array.from(state.correctAnswers.mrna).map(b => rules.mrnaToTrna[b]).join(''); state.correctAnswers.aminoAcid = aminoAcid; elements.dnaDisplay.textContent = state.currentDna; elements.answerInputs.forEach(el => el.value = ''); elements.feedback.textContent = ''; setActiveInput(elements.mrnaInput); }
-    function checkAnswer() { const userMrna = elements.mrnaInput.value; const userTrna = elements.trnaInput.value; const userAmino = elements.aminoAcidInput.value; const isCorrect = userMrna === state.correctAnswers.mrna && userTrna === state.correctAnswers.trna && userAmino === state.correctAnswers.aminoAcid; if (isCorrect) { elements.feedback.textContent = "パーフェクト！🎉"; elements.feedback.style.color = 'var(--correct-color)'; state.score += 100; } else { elements.feedback.innerHTML = `残念...<br>正解は ${state.correctAnswers.mrna} / ${state.correctAnswers.trna} / ${state.correctAnswers.aminoAcid}`; elements.feedback.style.color = 'var(--wrong-color)'; state.lives--; } updateDisplay(); (state.lives > 0) ? setTimeout(nextProblem, 2500) : gameOver(); }
-    function gameOver() { elements.feedback.textContent = "ゲームオーバー！"; elements.dnaDisplay.textContent = "FIN"; elements.submitButton.style.display = 'none'; elements.toggleCodonButton.style.display = 'none'; elements.resetButton.style.display = 'inline-block'; }
-    function resetGame() { state.score = 0; state.lives = 3; updateDisplay(); elements.submitButton.style.display = 'inline-block'; elements.toggleCodonButton.style.display = 'inline-block'; elements.resetButton.style.display = 'none'; nextProblem(); }
+    // --- ▼▼▼ checkAnswer関数を修正 ▼▼▼ ---
+    function checkAnswer() {
+        const userMrna = elements.mrnaInput.value;
+        const userTrna = elements.trnaInput.value;
+        const userAmino = elements.aminoAcidInput.value;
+        const isCorrect = userMrna === state.correctAnswers.mrna && userTrna === state.correctAnswers.trna && userAmino === state.correctAnswers.aminoAcid;
 
-    // --- ▼▼▼ イベントリスナーの修正 ▼▼▼ ---
+        if (isCorrect) {
+            elements.feedback.textContent = "パーフェクト！🎉";
+            elements.feedback.style.color = 'var(--correct-color)';
+            state.score += 100;
+        } else {
+            elements.feedback.innerHTML = `残念...<br>正解は ${state.correctAnswers.mrna} / ${state.correctAnswers.trna} / ${state.correctAnswers.aminoAcid}`;
+            elements.feedback.style.color = 'var(--wrong-color)';
+            state.lives--;
+        }
+
+        updateDisplay();
+        elements.answerInputs.forEach(el => el.disabled = true); // 入力欄を無効化
+        elements.submitButton.style.display = 'none'; // 「決定」ボタンを隠す
+
+        if (state.lives > 0) {
+            elements.nextQuestionButton.style.display = 'inline-block'; // 「次の問題へ」ボタンを表示
+        } else {
+            gameOver();
+        }
+    }
+
+    function gameOver() {
+        elements.feedback.textContent = "ゲームオーバー！";
+        elements.dnaDisplay.textContent = "FIN";
+        elements.toggleCodonButton.style.display = 'none';
+        elements.nextQuestionButton.style.display = 'none';
+        elements.resetButton.style.display = 'inline-block';
+    }
+
+    function resetGame() {
+        state.score = 0; state.lives = 3;
+        updateDisplay();
+        elements.toggleCodonButton.style.display = 'inline-block';
+        elements.resetButton.style.display = 'none';
+        nextProblem();
+    }
+    
+    // --- イベントリスナー (変更なし) ---
     elements.submitButton.addEventListener('click', checkAnswer);
+    elements.nextQuestionButton.addEventListener('click', nextProblem); // NEW
     elements.resetButton.addEventListener('click', resetGame);
     elements.toggleCodonButton.addEventListener('click', () => { elements.codonModal.style.display = 'flex'; });
     elements.codonModal.addEventListener('click', (e) => { if (e.target === elements.codonModal) { elements.codonModal.style.display = 'none'; } });
     elements.answerInputs.forEach(input => input.addEventListener('click', (e) => setActiveInput(e.target)));
+    elements.baseButtons.forEach(button => { button.addEventListener('click', (e) => { if (state.activeInput && state.activeInput.id !== 'amino-acid-input') { if (state.activeInput.value.length < 3) { state.activeInput.value += e.target.textContent; } } }); });
+    elements.deleteButton.addEventListener('click', () => { if (state.activeInput) { state.activeInput.value = state.activeInput.value.slice(0, -1); } });
+    aminoAcids.forEach(acid => { const button = document.createElement('button'); button.textContent = acid; button.className = 'game-button base-button amino-acid-button'; button.style.fontSize = acid.length > 5 ? '0.8em' : '1em'; elements.inputForm.appendChild(button); button.addEventListener('click', () => { if (state.activeInput && state.activeInput.id === 'amino-acid-input') { state.activeInput.value = acid; } }); });
 
-    // 塩基ボタン (A, T, C, G, U) の機能
-    elements.baseButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            if (state.activeInput && state.activeInput.id !== 'amino-acid-input') {
-                if (state.activeInput.value.length < 3) {
-                    state.activeInput.value += e.target.textContent;
-                }
-            }
-        });
-    });
-
-    // 削除ボタンの機能
-    elements.deleteButton.addEventListener('click', () => {
-        if (state.activeInput) {
-            state.activeInput.value = state.activeInput.value.slice(0, -1);
-        }
-    });
-
-    // アミノ酸ボタンの生成と機能
-    aminoAcids.forEach(acid => {
-        const button = document.createElement('button');
-        button.textContent = acid;
-        button.className = 'game-button base-button amino-acid-button';
-        button.style.fontSize = acid.length > 5 ? '0.8em' : '1em';
-        elements.inputForm.appendChild(button);
-        button.addEventListener('click', () => {
-            if (state.activeInput && state.activeInput.id === 'amino-acid-input') {
-                state.activeInput.value = acid;
-            }
-        });
-    });
-
-    // --- ゲーム初期化 ---
     generateCodonTable();
     resetGame();
     </script>
